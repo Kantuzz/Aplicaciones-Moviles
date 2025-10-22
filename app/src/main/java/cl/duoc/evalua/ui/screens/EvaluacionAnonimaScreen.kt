@@ -15,6 +15,11 @@ import cl.duoc.evalua.data.repo.EvaluacionesRepository
 import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.round
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +35,7 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
     var cooldown by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var showThanks by remember { mutableStateOf(false) }
 
     // Validaciones
     val mesaUuid = remember(mesaId) { runCatching { UUID.fromString(mesaId) }.getOrNull() }
@@ -40,9 +46,7 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Evaluación anónima", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
+                title = { Text("Evaluación anónima", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -51,9 +55,8 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
         },
         snackbarHost = { SnackbarHost(snackbar) },
 
-        // 🔻 Botón SIEMPRE visible
+        // Botón SIEMPRE visible
         bottomBar = {
-            // Deja espacio y un botón XL bien notorio
             Surface(shadowElevation = 8.dp) {
                 Box(
                     Modifier
@@ -74,11 +77,23 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
                                         snapshot = snapshot,
                                         valores = valores
                                     )
+                                    // Reset UI
                                     valores = emptyMap()
                                     comentario = ""
+
+                                    // Feedback
+                                    showThanks = true
                                     snackbar.showSnackbar("¡Gracias! Tu evaluación fue enviada.")
+
+                                    // Cooldown anti doble-click (2s)
                                     cooldown = true
                                     sending = false
+
+                                    // Ocultar banner luego de 1.8s y levantar cooldown
+                                    scope.launch {
+                                        kotlinx.coroutines.delay(1800)
+                                        showThanks = false
+                                    }
                                     scope.launch {
                                         kotlinx.coroutines.delay(2000)
                                         cooldown = false
@@ -91,7 +106,7 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
                         },
                         enabled = puedeEnviar,
                         modifier = Modifier
-                            .fillMaxWidth(0.92f)   // 92% del ancho
+                            .fillMaxWidth(0.92f)
                             .height(60.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
@@ -116,7 +131,7 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
             }
         }
     ) { pad ->
-        // 🔹 Contenido scrollable
+        // Contenido scrollable
         LazyColumn(
             modifier = Modifier
                 .padding(pad)
@@ -125,6 +140,28 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
+                // Banner “Gracias” animado (aparece tras enviar)
+                AnimatedVisibility(
+                    visible = showThanks,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        tonalElevation = 2.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            "¡Gracias! Tu evaluación fue enviada.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
                 Text("Mesa: $mesaId", style = MaterialTheme.typography.titleMedium)
                 if (mesaUuid == null) {
                     AssistChip(onClick = {}, enabled = false, label = { Text("ID de mesa inválido") })
@@ -171,7 +208,7 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
                     value = comentario,
                     onValueChange = { if (it.length <= 280) comentario = it },
                     label = { Text("Comentario (opcional)") },
-                    supportingText = { Text("${comenarioLen(comentario)}/280") },
+                    supportingText = { Text("${comentarioLen(comentario)}/280") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
                 )
@@ -183,7 +220,7 @@ fun EvaluacionAnonimaScreen(mesaId: String) {
 }
 
 // contador seguro para evitar recomposiciones raras
-private fun comenarioLen(text: String) = text.length
+private fun comentarioLen(text: String) = text.length
 
 /**
  * Slider discreto 1..5 (siempre retorna enteros)
