@@ -8,24 +8,29 @@ import androidx.compose.ui.graphics.Color
 private val LightColors = lightColorScheme(
     primary = DuocYellow,
     onPrimary = DuocBlack,
+
     secondary = DuocBlack,
     onSecondary = White,
+
     tertiary = DuocGray,
+
     background = BgCream,
     onBackground = DuocBlack,
+
     surface = SurfaceLight,
     onSurface = DuocBlack,
+
     error = Color(0xFFDA0000)
 )
 
 @Composable
 fun EvaluacionGastroTheme(
-    darkTheme: Boolean = false, // fuerza claro para que respete la marca
+    darkTheme: Boolean = false, // fuerza claro para mantener la marca
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
         colorScheme = LightColors,
-        typography = Typography, // deja el que ya tienes en Type.kt
+        typography = Typography, // deja tu Type.kt como está
         content = content
     )
 }
