@@ -71,4 +71,6 @@ dependencies {
 
     // ZXing (generar códigos QR)
     implementation("com.google.zxing:core:3.5.3")
+
+    implementation("androidx.print:print:1.0.0")
 }

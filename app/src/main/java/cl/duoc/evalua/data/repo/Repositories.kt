@@ -15,9 +15,20 @@ class MesasRepository {
         dao.upsert(MesaEntity(id = UUID.randomUUID(), nombre = nombre.trim()))
     }
 
+    // Mantener por si lo usa la UI para activar/desactivar
     suspend fun upsertEntity(m: cl.duoc.evalua.data.local.MesaEntity) =
         cl.duoc.evalua.core.ServiceLocator.db.mesaDao().upsert(m)
+
+    //renombrar por id (seguro y claro)
+    suspend fun rename(id: UUID, nuevoNombre: String) {
+        val actual = dao.getById(id) ?: return
+        dao.upsert(actual.copy(nombre = nuevoNombre.trim()))
+    }
+
+    //eliminar
+    suspend fun delete(m: MesaEntity) = dao.delete(m)
 }
+
 
 class CriteriosRepository {
     private val dao = ServiceLocator.db.criterioDao()

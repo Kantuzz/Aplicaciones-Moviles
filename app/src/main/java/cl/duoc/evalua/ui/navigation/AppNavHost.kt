@@ -27,9 +27,7 @@ fun AppNavHost(nav: NavHostController) {
 
         // HOME DOCENTE
         composable(Route.Home.path) { HomeDocenteScreen(nav) }
-
-        // Estas pantallas hoy no reciben nav; si luego quieres, se lo pasamos.
-        composable(Route.Mesas.path) { MesasScreen() }
+        composable(Route.Mesas.path) { MesasScreen(nav) }
         composable(Route.GenerarQR.path) { QrScreen() }
         composable(Route.Historial.path) { HistorialScreen() }
         composable(Route.Criterios.path) { CriteriosScreen() }

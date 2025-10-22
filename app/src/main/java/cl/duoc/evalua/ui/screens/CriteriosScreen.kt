@@ -20,29 +20,48 @@ fun CriteriosScreen() {
     val scope = rememberCoroutineScope()
 
     var nombre by remember { mutableStateOf("") }
-    var orden by remember { mutableStateOf("0") }
     var peso by remember { mutableStateOf("") }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Criterios De Evaluacion") }) }) { pad ->
-        Column(Modifier.padding(pad).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre Del aspecto a Evaluar") }, singleLine = true)
-            OutlinedTextField(value = orden, onValueChange = { orden = it.filter { ch -> ch.isDigit() } }, label = { Text("Orden") }, singleLine = true)
-            OutlinedTextField(value = peso, onValueChange = { peso = it.filter { ch -> ch.isDigit() } }, label = { Text("Puntaje") }, singleLine = true)
+    // Orden AUTOMÁTICO: toma el mayor orden actual y suma 1
+    val nextOrder = remember(lista) { (lista.maxOfOrNull { it.orden } ?: 0) + 1 }
+    val puedeAgregar = nombre.trim().isNotEmpty()
+
+    Scaffold(topBar = { TopAppBar(title = { Text("Criterios a Evaluar") }) }) { pad ->
+        Column(
+            Modifier.padding(pad).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                label = { Text("Nombre Del criterio a evaluar") },
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = peso,
+                onValueChange = { peso = it.filter { ch -> ch.isDigit() } },
+                label = { Text("Puntaje") },
+                singleLine = true
+            )
+
+            // Indicador del orden que tendrá el próximo criterio
+            AssistChip(onClick = {}, enabled = false, label = { Text("Se agregará como #$nextOrder") })
 
             Button(
-                enabled = nombre.trim().isNotEmpty(),
+                enabled = puedeAgregar,
                 onClick = {
                     scope.launch {
                         repo.upsert(
                             CriterioEntity(
                                 id = UUID.randomUUID(),
                                 nombre = nombre.trim(),
-                                orden = orden.toIntOrNull() ?: 0,
+                                orden = nextOrder,                    // ← ORDEN AUTO
                                 peso = peso.toIntOrNull(),
                                 activo = true
                             )
                         )
-                        nombre = ""; orden = "0"; peso = ""
+                        nombre = ""; peso = ""
                     }
                 }
             ) { Text("Agregar") }
@@ -52,20 +71,26 @@ fun CriteriosScreen() {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(lista, key = { it.id }) { c ->
                     ElevatedCard {
-                        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(
+                            Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Column(Modifier.weight(1f)) {
                                 Text("${c.orden}. ${c.nombre}", style = MaterialTheme.typography.titleMedium)
                                 val pesoTxt = c.peso?.let { " • Puntaje: $it" } ?: ""
-                                Text("Estado: ${if (c.activo) "Activo" else "Inactivo"}$pesoTxt", style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    "Estado: ${if (c.activo) "Activo" else "Inactivo"}$pesoTxt",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
-                            AssistChip(
-                                onClick = {
-                                    scope.launch {
-                                        repo.upsert(c.copy(activo = !c.activo))
-                                    }
-                                },
-                                label = { Text(if (c.activo) "Desactivar" else "Activar") }
-                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AssistChip(
+                                    onClick = {
+                                        scope.launch { repo.upsert(c.copy(activo = !c.activo)) }
+                                    },
+                                    label = { Text(if (c.activo) "Desactivar" else "Activar") }
+                                )
+                            }
                         }
                     }
                 }
