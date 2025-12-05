@@ -9,16 +9,25 @@ import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import cl.duoc.evalua.ui.navigation.Route
+import cl.duoc.evalua.viewmodel.DolarViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeDocenteScreen(nav: NavHostController) {
+
+    val dolarViewModel: DolarViewModel = viewModel()
+    val dolarState by dolarViewModel.state.collectAsState()
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background, // fondo crema
         topBar = {
@@ -40,8 +49,27 @@ fun HomeDocenteScreen(nav: NavHostController) {
         ) {
             Text("Menú docente", style = MaterialTheme.typography.titleLarge)
 
+            // --- Bloque de API Dólar ---
+            val errorMessage = dolarState.error
+            when {
+                dolarState.isLoading -> {
+                    Text(text = "Cargando valor del dólar...")
+                }
+                errorMessage != null -> {
+                    Text(text = errorMessage, color = Color.Red)
+                }
+                dolarState.valor != null -> {
+                    Text(text = "Valor dólar CLP: ${dolarState.valor}")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Fila 1
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 MenuCard(
                     icon = Icons.Default.RestaurantMenu,
                     label = "Mesas",
@@ -56,7 +84,10 @@ fun HomeDocenteScreen(nav: NavHostController) {
             }
 
             // Fila 2
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 MenuCard(
                     icon = Icons.Default.AccessTime,
                     label = "Historial",

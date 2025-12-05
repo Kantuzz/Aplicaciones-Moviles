@@ -21,26 +21,14 @@ class AuthViewModel(private val session: SessionStore) : ViewModel() {
     private val _ui = MutableStateFlow(AuthUiState())
     val ui = _ui.asStateFlow()
 
-    // Solo correos institucionales de docentes:
-    private val domainRegex = Regex("""^[A-Za-z0-9._%+-]+@profesor\.duoc\.cl$""")
-
     fun onEmailChange(value: String) {
-        val v = value.trim()
-        val err = when {
-            v.isBlank() -> "Ingresa tu correo institucional"
-            !domainRegex.matches(v) -> "Debe ser @profesor.duoc.cl"
-            else -> null
-        }
+        val err = validarEmailDocente(value)
         _ui.value = _ui.value.copy(email = value, emailError = err)
         recomputeEnabled()
     }
 
     fun onPasswordChange(value: String) {
-        val err = when {
-            value.isBlank() -> "Ingresa tu contraseña"
-            value.length < 6 -> "Mínimo 6 caracteres"
-            else -> null
-        }
+        val err = validarPassword(value)
         _ui.value = _ui.value.copy(password = value, passwordError = err)
         recomputeEnabled()
     }
@@ -68,5 +56,41 @@ class AuthViewModel(private val session: SessionStore) : ViewModel() {
             _ui.value = _ui.value.copy(loading = false)
             onSuccess()
         }
+    }
+}
+
+// =========================
+// Helpers reutilizables
+// =========================
+
+private val DOCENTE_REGEX =
+    Regex("""^[A-Za-z0-9._%+-]+@profesor\.duoc\.cl$""")
+
+/**
+ * Valida un correo de docente:
+ * - No vacío
+ * - Dominio @profesor.duoc.cl
+ * Devuelve mensaje de error o null si es válido.
+ */
+fun validarEmailDocente(email: String): String? {
+    val v = email.trim()
+    return when {
+        v.isBlank() -> "Ingresa tu correo institucional"
+        !DOCENTE_REGEX.matches(v) -> "Debe ser @profesor.duoc.cl"
+        else -> null
+    }
+}
+
+/**
+ * Valida contraseña:
+ * - No vacía
+ * - Mínimo 6 caracteres
+ * Devuelve mensaje de error o null si es válida.
+ */
+fun validarPassword(password: String): String? {
+    return when {
+        password.isBlank() -> "Ingresa tu contraseña"
+        password.length < 6 -> "Mínimo 6 caracteres"
+        else -> null
     }
 }
